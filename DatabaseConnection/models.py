@@ -2952,6 +2952,11 @@ class ProjectProject(models.Model):
     write_uid = models.ForeignKey('ResUsers', models.DO_NOTHING, related_name='ProjectProject_write_uid',
                                   db_column='write_uid', blank=True, null=True)
     write_date = models.DateTimeField(blank=True, null=True)
+    project_type_memb = models.ManyToManyField(
+        'ProjectTaskType',
+        through='ProjectTaskTypeRel',
+        through_fields=('project', 'type'),
+    )
 
     class Meta:
         managed = False

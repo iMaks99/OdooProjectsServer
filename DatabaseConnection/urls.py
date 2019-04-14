@@ -5,4 +5,8 @@ urlpatterns = [
     path('connection/', views.db_connection),
     path('getprojectsall/', views.get_projects_all),
     path('login/', views.login_user),
+    path('getprojecttasks/', views.get_project_tasks),
+    path('getprojecttasktype/', views.get_project_stages),
+    path('getpartnerimage/', views.get_partner_image),
+    path('getusertasks/', views.get_user_tasks),
 ]
