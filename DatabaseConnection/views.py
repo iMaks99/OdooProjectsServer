@@ -99,6 +99,24 @@ def get_user_tasks(request):
     return JsonResponse(result, safe=False)
 
 
+def get_user_tasks_stages(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    tasks = ProjectTask.objects.using(db_id).filter(active=True, user=list(user.values())[0]['id']).select_related('stage')
+
+    result = [{
+        'id': t.stage_id,
+        'name': t.stage.name
+    } for t in tasks]
+
+    return JsonResponse(result, safe=False)
+
+
 def get_partner_image(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
     token = token.replace('Bearer ', '')
