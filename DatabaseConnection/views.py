@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseNotFound, HttpRe
 from django.views.decorators.csrf import csrf_exempt
 
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    IrAttachment
+    IrAttachment, HrDepartment, HrEmployee, EmployeeCategoryRel
 
 
 @csrf_exempt
@@ -107,7 +107,8 @@ def get_user_tasks_stages(request):
     if not user.exists():
         raise PermissionDenied()
 
-    tasks = ProjectTask.objects.using(db_id).filter(active=True, user=list(user.values())[0]['id']).select_related('stage')
+    tasks = ProjectTask.objects.using(db_id).filter(active=True, user=list(user.values())[0]['id']) \
+        .select_related('stage')
 
     result = [{
         'id': t.stage_id,
@@ -117,6 +118,7 @@ def get_user_tasks_stages(request):
     return JsonResponse(result, safe=False)
 
 
+# TODO getting images
 def get_partner_image(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
     token = token.replace('Bearer ', '')
@@ -141,6 +143,40 @@ def get_project_stages(request):
     pr_id = request.GET.get('project_id')
 
     result = list(ProjectProject.objects.using(db_id).get(id=pr_id).project_type_memb.values())
+
+    return JsonResponse(result, safe=False)
+
+
+def get_departments_all(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token).select_related('company')
+    if not user.exists():
+        raise PermissionDenied()
+
+    departments = list(HrDepartment.objects.using(db_id).filter(company=user[0].company.id).values())
+    return JsonResponse(departments, safe=False)
+
+
+def get_department_employees(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token).select_related('company')
+    if not user.exists():
+        raise PermissionDenied()
+
+    employees = HrEmployee.objects.using(db_id).filter(department=request.GET.get('department_id')).select_related(
+        'job')
+
+    result = [{
+        'id': e.id,
+        'name': e.name,
+        'work_location': e.work_location,
+        'job': e.job.name,
+        'category': list(e.employee_category.values())
+    } for e in employees]
 
     return JsonResponse(result, safe=False)
 

@@ -1195,6 +1195,11 @@ class HrEmployee(models.Model):
     write_uid = models.ForeignKey('ResUsers', models.DO_NOTHING, related_name='HrEmployee_write_uid',
                                   db_column='write_uid', blank=True, null=True)
     write_date = models.DateTimeField(blank=True, null=True)
+    employee_category = models.ManyToManyField(
+        'HrEmployeeCategory',
+        through='EmployeeCategoryRel',
+        through_fields=('emp', 'category'),
+    )
 
     class Meta:
         managed = False
