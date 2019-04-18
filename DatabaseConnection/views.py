@@ -43,6 +43,7 @@ def get_projects_all(request):
         'id': p.id,
         'name': p.name,
         'partner': p.partner.display_name if p.partner else None,
+        'color': p.color,
         'tasks_count': ProjectTask.objects.using(db_id).filter(project=p.id).filter(stage_id__in=[4, 5]).count(),
         'is_favourite': ProjectFavoriteUserRel.objects.using(db_id).filter(
             Q(project=p.id) & Q(user=user[0].id)).exists()
@@ -59,8 +60,8 @@ def get_project_tasks(request):
     if not user.exists():
         raise PermissionDenied()
 
-    tasks = ProjectTask.objects.using(db_id)\
-        .filter(project=request.GET.get('project_id'))\
+    tasks = ProjectTask.objects.using(db_id) \
+        .filter(project=request.GET.get('project_id')) \
         .select_related('stage').select_related('user')
 
     result = [{
@@ -72,6 +73,7 @@ def get_project_tasks(request):
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
         'stage_id': t.stage.id,
+        'color': t.color,
         'assigned_to': t.user.partner.name if t.user else "",
     } for t in tasks]
 
@@ -104,6 +106,7 @@ def get_task_by_id(request):
     }
     return JsonResponse(result, safe=False)
 
+
 def get_user_tasks(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
     token = token.replace('Bearer ', '')
@@ -112,12 +115,12 @@ def get_user_tasks(request):
     if not user.exists():
         raise PermissionDenied()
 
-    tasks = ProjectTask.objects.using(db_id)\
-        .filter(active=True, user=list(user.values())[0]['id'])\
-        .select_related('project').select_related('user')
+    tasks = ProjectTask.objects.using(db_id) \
+        .filter(active=True, user=list(user.values())[0]['id']) \
+        .select_related('project').select_related('user').select_related('stage')
 
     result = [{
-         'id': t.id,
+        'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
         'email_from': t.email_from,
@@ -125,11 +128,8 @@ def get_user_tasks(request):
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
         'stage_id': t.stage.id,
-        'description': t.description,
-        'project_name': t.project.name,
-        'planned_hours': t.planned_hours,
+        'color': t.color,
         'assigned_to': t.user.partner.name if t.user else "",
-        'tags': list(t.project_task_tag.values())
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
