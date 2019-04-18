@@ -59,7 +59,9 @@ def get_project_tasks(request):
     if not user.exists():
         raise PermissionDenied()
 
-    tasks = ProjectTask.objects.using(db_id).filter(project=request.GET.get('project_id'))
+    tasks = ProjectTask.objects.using(db_id)\
+        .filter(project=request.GET.get('project_id'))\
+        .select_related('stage').select_related('user')
 
     result = [{
         'id': t.id,
@@ -69,11 +71,38 @@ def get_project_tasks(request):
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
-        'stage_id': t.stage.id
+        'stage_id': t.stage.id,
+        'assigned_to': t.user.partner.name if t.user else "",
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
 
+
+def get_task_by_id(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    tasks = ProjectTask.objects.using(db_id).get(pk=request.GET.get('task_id'))
+    result = {
+        'id': tasks.id,
+        'name': tasks.name,
+        'kanban_state': tasks.kanban_state,
+        'email_from': tasks.email_from,
+        'priority': tasks.priority,
+        'date_deadline': tasks.date_deadline,
+        'mail_activity_state': 0,
+        'stage_id': tasks.stage.id,
+        'description': tasks.description,
+        'project_name': tasks.project.name,
+        'planned_hours': tasks.planned_hours,
+        'assigned_to': tasks.user.partner.name if tasks.user else "",
+        'tags': list(tasks.project_task_tag.values())
+    }
+    return JsonResponse(result, safe=False)
 
 def get_user_tasks(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
@@ -83,17 +112,24 @@ def get_user_tasks(request):
     if not user.exists():
         raise PermissionDenied()
 
-    tasks = ProjectTask.objects.using(db_id).filter(active=True, user=list(user.values())[0]['id'])
+    tasks = ProjectTask.objects.using(db_id)\
+        .filter(active=True, user=list(user.values())[0]['id'])\
+        .select_related('project').select_related('user')
 
     result = [{
-        'id': t.id,
+         'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
         'email_from': t.email_from,
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
-        'stage_id': t.stage.id
+        'stage_id': t.stage.id,
+        'description': t.description,
+        'project_name': t.project.name,
+        'planned_hours': t.planned_hours,
+        'assigned_to': t.user.partner.name if t.user else "",
+        'tags': list(t.project_task_tag.values())
     } for t in tasks]
 
     return JsonResponse(result, safe=False)

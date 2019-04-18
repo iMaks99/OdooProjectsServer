@@ -3037,6 +3037,11 @@ class ProjectTask(models.Model):
                                    db_column='create_uid', blank=True, null=True)
     write_uid = models.ForeignKey('ResUsers', models.DO_NOTHING, related_name='ProjectTask_write_uid',
                                   db_column='write_uid', blank=True, null=True)
+    project_task_tag = models.ManyToManyField(
+        'ProjectTags',
+        through='ProjectTagsProjectTaskRel',
+        through_fields=('project_task', 'project_tags'),
+    )
 
     class Meta:
         managed = False
