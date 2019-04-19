@@ -7,7 +7,6 @@ urlpatterns = [
     path('login/', views.login_user),
     path('getprojecttasks/', views.get_project_tasks),
     path('getprojecttasktype/', views.get_project_stages),
-    path('getpartnerimage/', views.get_partner_image),
     path('getusertasks/', views.get_user_tasks),
     path('getusertasksstages/', views.get_user_tasks_stages),
     path('getdepartmentsall/', views.get_departments_all),

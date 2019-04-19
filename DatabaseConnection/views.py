@@ -1,3 +1,5 @@
+import base64
+
 from django.core.exceptions import PermissionDenied
 from django.db import connections, OperationalError
 from django.db.models import Q
@@ -152,20 +154,6 @@ def get_user_tasks_stages(request):
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
-
-
-# TODO getting images
-def get_partner_image(request):
-    token = request.META.get('HTTP_AUTHORIZATION', None)
-    token = token.replace('Bearer ', '')
-    db_id = request.META.get('HTTP_DBNAME', None)
-    user = ResUsers.objects.using(db_id).filter(password=token)
-    if not user.exists():
-        raise PermissionDenied()
-
-    partner = ProjectTask.objects.using(db_id).get(pk=request.GET.get('task_id')).user.partner_id
-    result = IrAttachment.objects.using(db_id).get(res_model='res.partner', res_field='image', res_id=partner)
-    return HttpResponse(result.db_datas, content_type='application/{0}'.format(result.mimetype))
 
 
 def get_project_stages(request):
