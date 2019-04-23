@@ -7,7 +7,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseNotFound, HttpRe
 from django.views.decorators.csrf import csrf_exempt
 
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    IrAttachment, HrDepartment, HrEmployee, EmployeeCategoryRel
+    IrAttachment, HrDepartment, HrEmployee, EmployeeCategoryRel, MailActivity
 
 
 @csrf_exempt
@@ -170,6 +170,17 @@ def get_project_stages(request):
 
     return JsonResponse(result, safe=False)
 
+
+def get_task_mail_activity(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    result = list(MailActivity.objects.using(db_id).filter(res_id=request.GET.get("task_id"), res_model=171).values())
+    return JsonResponse(result, safe=False)
 
 def get_departments_all(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
