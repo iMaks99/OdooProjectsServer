@@ -179,8 +179,20 @@ def get_task_mail_activity(request):
     if not user.exists():
         raise PermissionDenied()
 
-    result = list(MailActivity.objects.using(db_id).filter(res_id=request.GET.get("task_id"), res_model=171).values())
+    mail_activities = MailActivity.objects.using(db_id).filter(res_id=request.GET.get("task_id"), res_model=171)\
+        .select_related('activity_type')
+
+    result = [{
+        'id': ma.id,
+        'res_id': ma.res_id,
+        'res_model': ma.res_model_0,
+        'activity_type': ma.activity_type.name,
+        'summary': ma.summary,
+        'note': ma.note,
+        'date_deadline': ma.date_deadline
+    } for ma in mail_activities]
     return JsonResponse(result, safe=False)
+
 
 def get_departments_all(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
