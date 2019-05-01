@@ -30,7 +30,7 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'DatabaseConnection.apps.DatabaseconnectionConfig',
-    'DBTemplate',
+    'DBTemplate.apps.DbtemplateConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

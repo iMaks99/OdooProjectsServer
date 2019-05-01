@@ -2,8 +2,9 @@ from django.db import models
 
 
 class Databases(models.Model):
-    name = models.CharField(max_length=150)
-    host = models.CharField(max_length=150)
-    port = models.CharField(max_length=150)
-    user = models.CharField(max_length=150)
-    password = models.CharField(max_length=150)
+    ENGINE = models.CharField(max_length=1000, blank=True, null=True)
+    NAME = models.CharField(max_length=1000, blank=True, null=True)
+    USER = models.CharField(max_length=1000, blank=True, null=True)
+    PASSWORD = models.CharField(max_length=1000, blank=True, null=True)
+    HOST = models.CharField(max_length=1000, blank=True, null=True)
+    PORT = models.CharField(max_length=1000, blank=True, null=True)

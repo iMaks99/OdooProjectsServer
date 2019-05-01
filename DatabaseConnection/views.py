@@ -1,34 +1,10 @@
-import base64
-
 from django.core.exceptions import PermissionDenied
-from django.db import connections, OperationalError
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    IrAttachment, HrDepartment, HrEmployee, EmployeeCategoryRel, MailActivity
-
-
-@csrf_exempt
-def db_connection(request):
-    if request.method != "POST":
-        return HttpResponseNotFound("Incorrect request method")
-
-    database_id = request.POST['db_name']
-    newDatabase = {"id": database_id, 'ENGINE': 'django.db.backends.postgresql', 'NAME': database_id,
-                   'USER': request.POST['db_user'], 'PASSWORD': request.POST['db_password'],
-                   'HOST': request.POST['db_host'], 'PORT': request.POST['db_port']}
-
-    connections.databases[database_id] = newDatabase
-
-    db_conn = connections[database_id]
-    try:
-        db_conn.cursor()
-    except OperationalError:
-        return HttpResponseBadRequest()
-    else:
-        return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
+    HrDepartment, HrEmployee, MailActivity
 
 
 def get_projects_all(request):
