@@ -12,4 +12,7 @@ urlpatterns = [
     path('getdepartmentemployees/', views.get_department_employees),
     path('gettaskbyid/', views.get_task_by_id),
     path('gettaskmailactivity/', views.get_task_mail_activity),
+    path('sendnotification/', views.send_notification),
+
+    path('addprojecttask/', views.add_project_task),
 ]

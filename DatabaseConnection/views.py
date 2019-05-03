@@ -1,8 +1,12 @@
+import json
+
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponseNotFound
+from django.http import JsonResponse, HttpResponseNotFound, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from pyfcm import FCMNotification
 
+from DBTemplate.models import FCMUsers
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
     HrDepartment, HrEmployee, MailActivity
 
@@ -56,6 +60,23 @@ def get_project_tasks(request):
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
+
+
+def add_project_task(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    data = json.loads(request.body)
+    project_task = data['project_task']
+
+    task = ProjectTask(project_task)
+    task.save()
+
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
 
 
 def get_task_by_id(request):
@@ -155,7 +176,7 @@ def get_task_mail_activity(request):
     if not user.exists():
         raise PermissionDenied()
 
-    mail_activities = MailActivity.objects.using(db_id).filter(res_id=request.GET.get("task_id"), res_model=171)\
+    mail_activities = MailActivity.objects.using(db_id).filter(res_id=request.GET.get("task_id"), res_model=171) \
         .select_related('activity_type')
 
     result = [{
@@ -209,5 +230,31 @@ def login_user(request):
     if request.method != "POST":
         return HttpResponseNotFound("Incorrect request method")
 
-    token = ResUsers.objects.using(request.POST['db_name']).get(login=request.POST['user_mail']).password
+    user = ResUsers.objects.using(request.POST['db_name']).get(login=request.POST['user_mail'])
+
+    token = user.password
+
+    try:
+        fcm_user = FCMUsers.objects.using('default').get(user_id=user.id)
+        fcm_user.fcm_token = request.POST['fcm_token']
+    except FCMUsers.DoesNotExist:
+        new_fcm_user = FCMUsers(user_id=user.id, fcm_token=request.POST['fcm_token'])
+        new_fcm_user.save()
+
     return JsonResponse(token, safe=False)
+
+
+push_service = FCMNotification(
+    api_key='AAAAqekrmVs:APA91bGH9H9c48nXsvpTLAnkxKFDDvyXG-AZaizo6hWxchz1fD8a7lkmSynGTtlpXiZEyT4cPTZvgGegkgVmPQUpL_ZAJZKDTyldjqMBEB-ngpSbvrRXDZlJFuboj3tnx8Rxa0zn0DfO')
+
+
+def send_notification(request):
+    tokens = FCMUsers.objects.using('default').all()
+
+    registration_id = tokens.first().fcm_token
+    message_title = "Uber update"
+    message_body = "Hi john, your customized news for today is ready"
+    result = push_service.notify_single_device(registration_id=registration_id, message_title=message_title,
+                                               message_body=message_body)
+    print(result)
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)

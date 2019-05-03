@@ -8,3 +8,8 @@ class Databases(models.Model):
     PASSWORD = models.CharField(max_length=1000, blank=True, null=True)
     HOST = models.CharField(max_length=1000, blank=True, null=True)
     PORT = models.CharField(max_length=1000, blank=True, null=True)
+
+
+class FCMUsers(models.Model):
+    user_id = models.IntegerField(blank=True, null=True)
+    fcm_token = models.CharField(max_length=1000, blank=True, null=True)
