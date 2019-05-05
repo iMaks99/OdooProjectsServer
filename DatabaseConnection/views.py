@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -57,11 +58,13 @@ def get_project_tasks(request):
         'stage_id': t.stage.id,
         'color': t.color,
         'assigned_to': t.user.partner.name if t.user else "",
+        'assigned_to_id': t.user.partner.id if t.user else -1
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
 
 
+@csrf_exempt
 def add_project_task(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
     token = token.replace('Bearer ', '')
@@ -71,12 +74,19 @@ def add_project_task(request):
         raise PermissionDenied()
 
     data = json.loads(request.body)
-    project_task = data['project_task']
+    task = ProjectTask()
 
-    task = ProjectTask(project_task)
+    task.name = data['name']
+    task.priority = data['priority']
+    task.user = ResUsers.objects.using(db_id).get(partner=data['assigned_to_id'])
+    task.stage_id = data['stage_id']
+
+    if 'date_deadline' in data.keys():
+        task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
     task.save()
 
-    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
+    send_notification(task)
+    return JsonResponse(task.id, safe=False)
 
 
 def get_task_by_id(request):
@@ -101,6 +111,7 @@ def get_task_by_id(request):
         'project_name': tasks.project.name,
         'planned_hours': tasks.planned_hours,
         'assigned_to': tasks.user.partner.name if tasks.user else "",
+        'assigned_to_id': tasks.user.partner.id if tasks.user else -1,
         'tags': list(tasks.project_task_tag.values())
     }
     return JsonResponse(result, safe=False)
@@ -129,6 +140,7 @@ def get_user_tasks(request):
         'stage_id': t.stage.id,
         'color': t.color,
         'assigned_to': t.user.partner.name if t.user else "",
+        'assigned_to_id': t.user.partner.id if t.user else -1,
     } for t in tasks]
 
     return JsonResponse(result, safe=False)
@@ -225,6 +237,25 @@ def get_department_employees(request):
     return JsonResponse(result, safe=False)
 
 
+def get_res_partners(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token).select_related('company')
+    if not user.exists():
+        raise PermissionDenied()
+
+    users = ResUsers.objects.using(db_id).filter(active=True).select_related('partner')
+
+    result = [{
+        'id': u.partner.id,
+        'name': u.partner.name,
+        'display_name': u.partner.display_name
+    } for u in users]
+
+    return JsonResponse(result, safe=False)
+
+
 @csrf_exempt
 def login_user(request):
     if request.method != "POST":
@@ -248,13 +279,14 @@ push_service = FCMNotification(
     api_key='AAAAqekrmVs:APA91bGH9H9c48nXsvpTLAnkxKFDDvyXG-AZaizo6hWxchz1fD8a7lkmSynGTtlpXiZEyT4cPTZvgGegkgVmPQUpL_ZAJZKDTyldjqMBEB-ngpSbvrRXDZlJFuboj3tnx8Rxa0zn0DfO')
 
 
-def send_notification(request):
-    tokens = FCMUsers.objects.using('default').all()
-
-    registration_id = tokens.first().fcm_token
-    message_title = "Uber update"
-    message_body = "Hi john, your customized news for today is ready"
-    result = push_service.notify_single_device(registration_id=registration_id, message_title=message_title,
-                                               message_body=message_body)
-    print(result)
+def send_notification(task):
+    try:
+        token = FCMUsers.objects.using('default').get(user_id=task.user.id)
+        registration_id = token.fcm_token
+        message_title = "New task"
+        message_body = "You have been assigned a new task %s" % task.name
+        push_service.notify_single_device(registration_id=registration_id, message_title=message_title,
+                                          message_body=message_body)
+    except FCMUsers.DoesNotExist:
+        pass
     return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
