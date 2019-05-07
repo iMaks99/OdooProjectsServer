@@ -9,7 +9,7 @@ from pyfcm import FCMNotification
 
 from DBTemplate.models import FCMUsers
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    HrDepartment, HrEmployee, MailActivity, ProjectTags
+    HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel
 
 
 def get_projects_all(request):
@@ -80,10 +80,16 @@ def add_project_task(request):
     task.priority = data['priority']
     task.user = ResUsers.objects.using(db_id).get(partner=data['assigned_to_id'])
     task.stage_id = data['stage_id']
+    task.project = ProjectProject.objects.using(db_id).get(name=data['project_name'])
 
     if 'date_deadline' in data.keys():
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
     task.save()
+
+    for tag in data['tags']:
+        temp = ProjectTags.objects.using(db_id).get(pk=tag['id'])
+        rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
+        rel.save()
 
     send_notification(task)
     return JsonResponse(task.id, safe=False)
