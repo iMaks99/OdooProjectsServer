@@ -13,6 +13,7 @@ urlpatterns = [
     path('gettaskbyid/', views.get_task_by_id),
     path('gettaskmailactivity/', views.get_task_mail_activity),
     path('getrespartners/', views.get_res_partners),
+    path('gettasktagsall/', views.get_task_tags_all),
 
     path('sendnotification/', views.send_notification),
 

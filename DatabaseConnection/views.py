@@ -9,7 +9,7 @@ from pyfcm import FCMNotification
 
 from DBTemplate.models import FCMUsers
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    HrDepartment, HrEmployee, MailActivity
+    HrDepartment, HrEmployee, MailActivity, ProjectTags
 
 
 def get_projects_all(request):
@@ -201,6 +201,18 @@ def get_task_mail_activity(request):
         'date_deadline': ma.date_deadline
     } for ma in mail_activities]
     return JsonResponse(result, safe=False)
+
+
+def get_task_tags_all(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    tags = list(ProjectTags.objects.using(db_id).all().values())
+    return JsonResponse(tags, safe=False)
 
 
 def get_departments_all(request):
