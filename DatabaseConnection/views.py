@@ -127,6 +127,9 @@ def edit_project_task(request):
     if 'project_name' in data.keys():
         task.project = ProjectProject.objects.using(db_id).get(name=data['project_name'])
 
+    if 'kanban_state' in data.keys():
+        task.kanban_state = data['kanban_state']
+
     if 'date_deadline' in data.keys():
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
     task.save()
