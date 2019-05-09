@@ -92,7 +92,7 @@ def add_project_task(request):
             rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
             rel.save()
 
-    send_notification(task)
+    task_created_notification(task)
     return JsonResponse(task.id, safe=False)
 
 
@@ -124,7 +124,8 @@ def edit_project_task(request):
     task.priority = data['priority']
     task.user = ResUsers.objects.using(db_id).get(partner=data['assigned_to_id'])
     task.stage_id = data['stage_id']
-    task.project = ProjectProject.objects.using(db_id).get(name=data['project_name'])
+    if 'project_name' in data.keys():
+        task.project = ProjectProject.objects.using(db_id).get(name=data['project_name'])
 
     if 'date_deadline' in data.keys():
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
@@ -138,7 +139,7 @@ def edit_project_task(request):
             rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
             rel.save()
 
-    task_created_notification(task)
+    task_edited_notofication(task)
     return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
 
 
