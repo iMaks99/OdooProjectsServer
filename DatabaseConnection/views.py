@@ -86,13 +86,60 @@ def add_project_task(request):
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
     task.save()
 
-    for tag in data['tags']:
-        temp = ProjectTags.objects.using(db_id).get(pk=tag['id'])
-        rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
-        rel.save()
+    if 'tags' in data.keys():
+        for tag in data['tags']:
+            temp = ProjectTags.objects.using(db_id).get(pk=tag['id'])
+            rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
+            rel.save()
 
     send_notification(task)
     return JsonResponse(task.id, safe=False)
+
+
+def delete_project_task(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    task = ProjectTask.objects.using(db_id).get(pk=request.GET.get('task_id'))
+    task.delete()
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
+
+
+@csrf_exempt
+def edit_project_task(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    data = json.loads(request.body)
+    task = ProjectTask.objects.using(db_id).get(pk=data['id'])
+    task.name = data['name']
+    task.priority = data['priority']
+    task.user = ResUsers.objects.using(db_id).get(partner=data['assigned_to_id'])
+    task.stage_id = data['stage_id']
+    task.project = ProjectProject.objects.using(db_id).get(name=data['project_name'])
+
+    if 'date_deadline' in data.keys():
+        task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
+    task.save()
+
+    ProjectTagsProjectTaskRel.objects.using(db_id).filter(project_task=data['id']).delete()
+
+    if 'tags' in data.keys():
+        for tag in data['tags']:
+            temp = ProjectTags.objects.using(db_id).get(pk=tag['id'])
+            rel = ProjectTagsProjectTaskRel(project_task=task, project_tags=temp)
+            rel.save()
+
+    task_created_notification(task)
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
 
 
 def get_task_by_id(request):
@@ -297,7 +344,7 @@ push_service = FCMNotification(
     api_key='AAAAqekrmVs:APA91bGH9H9c48nXsvpTLAnkxKFDDvyXG-AZaizo6hWxchz1fD8a7lkmSynGTtlpXiZEyT4cPTZvgGegkgVmPQUpL_ZAJZKDTyldjqMBEB-ngpSbvrRXDZlJFuboj3tnx8Rxa0zn0DfO')
 
 
-def send_notification(task):
+def task_created_notification(task):
     try:
         token = FCMUsers.objects.using('default').get(user_id=task.user.id)
         registration_id = token.fcm_token
@@ -307,4 +354,18 @@ def send_notification(task):
                                           message_body=message_body)
     except FCMUsers.DoesNotExist:
         pass
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
+
+
+def task_edited_notofication(task):
+    try:
+        token = FCMUsers.objects.using('default').get(user_id=task.user.id)
+        registration_id = token.fcm_token
+        message_title = "Task edited"
+        message_body = "%s has been edited" % task.name
+        push_service.notify_single_device(registration_id=registration_id, message_title=message_title,
+                                          message_body=message_body)
+    except FCMUsers.DoesNotExist:
+        pass
+
     return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)

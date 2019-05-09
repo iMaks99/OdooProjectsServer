@@ -15,7 +15,7 @@ urlpatterns = [
     path('getrespartners/', views.get_res_partners),
     path('gettasktagsall/', views.get_task_tags_all),
 
-    path('sendnotification/', views.send_notification),
-
     path('addprojecttask/', views.add_project_task),
+    path('deleteprojecttask/', views.delete_project_task),
+    path('editprojecttask/', views.edit_project_task),
 ]
