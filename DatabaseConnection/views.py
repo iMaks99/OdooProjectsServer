@@ -45,13 +45,15 @@ def get_project_tasks(request):
 
     tasks = ProjectTask.objects.using(db_id) \
         .filter(project=request.GET.get('project_id')) \
-        .select_related('stage').select_related('user')
+        .select_related('stage').select_related('user').select_related('partner')
 
     result = [{
         'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
-        'email_from': t.email_from,
+        'customer_id': t.partner.id,
+        'customer_display_name': t.partner.display_name,
+        'customer_email': t.partner.email,
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
@@ -159,7 +161,9 @@ def get_task_by_id(request):
         'id': tasks.id,
         'name': tasks.name,
         'kanban_state': tasks.kanban_state,
-        'email_from': tasks.email_from,
+        'customer_id': tasks.partner.id,
+        'customer_display_name': tasks.partner.display_name,
+        'customer_email': tasks.partner.email,
         'priority': tasks.priority,
         'date_deadline': tasks.date_deadline,
         'mail_activity_state': 0,
@@ -184,13 +188,16 @@ def get_user_tasks(request):
 
     tasks = ProjectTask.objects.using(db_id) \
         .filter(active=True, user=list(user.values())[0]['id']) \
-        .select_related('project').select_related('user').select_related('stage')
+        .select_related('project').select_related('user').select_related('stage') \
+        .select_related('partner')
 
     result = [{
         'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
-        'email_from': t.email_from,
+        'customer_id': t.partner.id,
+        'customer_display_name': t.partner.display_name,
+        'customer_email': t.partner.email,
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
