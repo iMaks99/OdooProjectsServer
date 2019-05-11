@@ -51,9 +51,9 @@ def get_project_tasks(request):
         'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
-        'customer_id': t.partner.id,
-        'customer_display_name': t.partner.display_name,
-        'customer_email': t.partner.email,
+        'customer_id': t.partner.id if t.partner else None,
+        'customer_display_name': t.partner.display_name if t.partner else None,
+        'customer_email': t.partner.email if t.partner else None,
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
@@ -161,9 +161,9 @@ def get_task_by_id(request):
         'id': tasks.id,
         'name': tasks.name,
         'kanban_state': tasks.kanban_state,
-        'customer_id': tasks.partner.id,
-        'customer_display_name': tasks.partner.display_name,
-        'customer_email': tasks.partner.email,
+        'customer_id': tasks.partner.id if tasks.partner else None,
+        'customer_display_name': tasks.partner.display_name if tasks.partner else None,
+        'customer_email': tasks.partner.email if tasks.partner else None,
         'priority': tasks.priority,
         'date_deadline': tasks.date_deadline,
         'mail_activity_state': 0,
@@ -188,16 +188,15 @@ def get_user_tasks(request):
 
     tasks = ProjectTask.objects.using(db_id) \
         .filter(active=True, user=list(user.values())[0]['id']) \
-        .select_related('project').select_related('user').select_related('stage') \
-        .select_related('partner')
+        .select_related('project').select_related('user').select_related('stage')
 
     result = [{
         'id': t.id,
         'name': t.name,
         'kanban_state': t.kanban_state,
-        'customer_id': t.partner.id,
-        'customer_display_name': t.partner.display_name,
-        'customer_email': t.partner.email,
+        'customer_id': t.partner.id if t.partner else None,
+        'customer_display_name': t.partner.display_name if t.partner else None,
+        'customer_email': t.partner.email if t.partner else None,
         'priority': t.priority,
         'date_deadline': t.date_deadline,
         'mail_activity_state': 0,
