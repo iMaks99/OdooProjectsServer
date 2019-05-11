@@ -169,6 +169,7 @@ def get_task_by_id(request):
         'mail_activity_state': 0,
         'stage_id': tasks.stage.id,
         'description': tasks.description,
+        'project_id': tasks.project.id,
         'project_name': tasks.project.name,
         'planned_hours': tasks.planned_hours,
         'assigned_to': tasks.user.partner.name if tasks.user else "",
