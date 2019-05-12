@@ -25,11 +25,16 @@ def get_projects_all(request):
     result = [{
         'id': p.id,
         'name': p.name,
-        'partner': p.partner.display_name if p.partner else None,
+        'partner_id': p.partner_id if p.partner else None,
+        'partner_name': p.partner.display_name if p.partner else None,
         'color': p.color,
         'tasks_count': ProjectTask.objects.using(db_id).filter(project=p.id).filter(stage_id__in=[4, 5]).count(),
         'is_favourite': ProjectFavoriteUserRel.objects.using(db_id).filter(
-            Q(project=p.id) & Q(user=user[0].id)).exists()
+            Q(project=p.id) & Q(user=user[0].id)).exists(),
+        'label_tasks': p.label_tasks,
+        'user_id': p.user.id if p.user else None,
+        'user_name': p.user.name if p.user else None,
+        'privacy_visibility': p.privacy_visibility
     } for p in projects]
 
     return JsonResponse(result, safe=False)
