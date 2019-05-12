@@ -9,7 +9,7 @@ from pyfcm import FCMNotification
 
 from DBTemplate.models import FCMUsers
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel
+    HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel, ResPartner
 
 
 def get_projects_all(request):
@@ -137,6 +137,21 @@ def edit_project_task(request):
     task.save()
 
     ProjectTagsProjectTaskRel.objects.using(db_id).filter(project_task=data['id']).delete()
+
+    if 'color' in data.keys():
+        task.color = data['color']
+
+    if 'customer_id' in data.keys():
+        task.partner_id = data['customer_id']
+
+    if 'customer_email' in data.keys():
+        task.email_from = data['customer_email']
+
+    if 'description' in data.keys():
+        task.description = data['description']
+
+    if 'stage_id' in data.keys():
+        task.stage_id = data['stage_id']
 
     if 'tags' in data.keys():
         for tag in data['tags']:
@@ -313,7 +328,7 @@ def get_department_employees(request):
     return JsonResponse(result, safe=False)
 
 
-def get_res_partners(request):
+def get_user_res_partners(request):
     token = request.META.get('HTTP_AUTHORIZATION', None)
     token = token.replace('Bearer ', '')
     db_id = request.META.get('HTTP_DBNAME', None)
@@ -321,14 +336,27 @@ def get_res_partners(request):
     if not user.exists():
         raise PermissionDenied()
 
-    users = ResUsers.objects.using(db_id).filter(active=True).select_related('partner')
+    users = ResUsers.objects.using(db_id).filter(active=True, company=user[0].company).select_related('partner')
 
     result = [{
         'id': u.partner.id,
         'name': u.partner.name,
-        'display_name': u.partner.display_name
+        'display_name': u.partner.display_name,
+        'email': u.partner.email
     } for u in users]
 
+    return JsonResponse(result, safe=False)
+
+
+def get_res_partners_all(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token).select_related('company')
+    if not user.exists():
+        raise PermissionDenied()
+
+    result = list(ResPartner.objects.using(db_id).all().values())
     return JsonResponse(result, safe=False)
 
 

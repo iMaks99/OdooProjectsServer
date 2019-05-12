@@ -12,7 +12,8 @@ urlpatterns = [
     path('getdepartmentemployees/', views.get_department_employees),
     path('gettaskbyid/', views.get_task_by_id),
     path('gettaskmailactivity/', views.get_task_mail_activity),
-    path('getrespartners/', views.get_res_partners),
+    path('getuserrespartners/', views.get_user_res_partners),
+    path('getrespartnersall/', views.get_res_partners_all),
     path('gettasktagsall/', views.get_task_tags_all),
 
     path('addprojecttask/', views.add_project_task),
