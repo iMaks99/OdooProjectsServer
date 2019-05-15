@@ -10,6 +10,7 @@ urlpatterns = [
     path('getusertasksstages/', views.get_user_tasks_stages),
     path('getdepartmentsall/', views.get_departments_all),
     path('getdepartmentemployees/', views.get_department_employees),
+    path('getprojectbyid/', views.get_project_by_id),
     path('gettaskbyid/', views.get_task_by_id),
     path('gettaskmailactivity/', views.get_task_mail_activity),
     path('getuserrespartners/', views.get_user_res_partners),
@@ -19,4 +20,8 @@ urlpatterns = [
     path('addprojecttask/', views.add_project_task),
     path('deleteprojecttask/', views.delete_project_task),
     path('editprojecttask/', views.edit_project_task),
+
+    path('createproject/', views.create_project),
+    path('editproject/', views.edit_project),
+    path('deleteproject/', views.delete_project),
 ]

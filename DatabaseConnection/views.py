@@ -9,7 +9,7 @@ from pyfcm import FCMNotification
 
 from DBTemplate.models import FCMUsers
 from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
-    HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel, ResPartner
+    HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel, ResPartner, MailAlias, IrModel
 
 
 def get_projects_all(request):
@@ -32,12 +32,141 @@ def get_projects_all(request):
         'is_favourite': ProjectFavoriteUserRel.objects.using(db_id).filter(
             Q(project=p.id) & Q(user=user[0].id)).exists(),
         'label_tasks': p.label_tasks,
-        'user_id': p.user.id if p.user else None,
-        'user_name': p.user.name if p.user else None,
+        'user_id': p.user.partner.id if p.user else None,
+        'user_name': p.user.partner.name if p.user else None,
         'privacy_visibility': p.privacy_visibility
     } for p in projects]
 
     return JsonResponse(result, safe=False)
+
+
+def get_project_by_id(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    project = ProjectProject.objects.using(db_id).get(pk=request.GET.get("project_id"))
+
+    result = {
+        'id': project.id,
+        'name': project.name,
+        'partner_id': project.partner_id if project.partner else None,
+        'partner_name': project.partner.display_name if project.partner else None,
+        'color': project.color,
+        'tasks_count': ProjectTask.objects.using(db_id).filter(project=project.id).filter(stage_id__in=[4, 5]).count(),
+        'is_favourite': ProjectFavoriteUserRel.objects.using(db_id).filter(
+            Q(project=project.id) & Q(user=user[0].id)).exists(),
+        'label_tasks': project.label_tasks,
+        'user_id': project.user.partner.id if project.user else None,
+        'user_name': project.user.partner.name if project.user else None,
+        'privacy_visibility': project.privacy_visibility
+    }
+
+    return JsonResponse(result, safe=False)
+
+
+@csrf_exempt
+def create_project(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    data = json.loads(request.body)
+    project = ProjectProject()
+    project.name = data['name']
+    if 'label_tasks' in data.keys():
+        project.label_tasks = data['label_tasks']
+    else:
+        project.label_tasks = 'Tasks'
+
+    project.partner = ResPartner.objects.using(db_id).get(display_name=data['partner_name'])
+    project.user = ResPartner.objects.using(db_id).get(name=data['user_name']).user
+    project.active = True
+    project.company = user[0].company
+    project.alias = MailAlias.objects.using(db_id).get(
+        Q(alias_model=IrModel.objects.using(db_id).get(name='Task')) &
+        Q(alias_parent_thread_id=ProjectProject.objects.using(db_id).all().count()))
+
+    if 'color' in data.keys():
+        project.color = data['color']
+    else:
+        project.color = 0
+
+    project.privacy_visibility = data['privacy_visibility']
+
+    project.save()
+
+    if 'is_favourite' in data.keys():
+        favour = ProjectFavoriteUserRel()
+        favour.project = project
+        favour.user = user[0]
+        favour.save()
+
+    return JsonResponse(project.id, safe=False)
+
+
+@csrf_exempt
+def edit_project(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    data = json.loads(request.body)
+    project = ProjectProject.objects.using(db_id).get(pk=data['id'])
+    project.name = data['name']
+    if 'label_tasks' in data.keys():
+        project.label_tasks = data['label_tasks']
+
+    if 'partner_name' in data.keys():
+        project.partner = ResPartner.objects.using(db_id).get(display_name=data['partner_name'])
+
+    if 'user_name' in data.keys():
+        project.user = ResUsers.objects.using(db_id).get(partner=ResPartner.objects.using(db_id).get(name=data['user_name']))
+
+    if 'color' in data.keys():
+        project.color = data['color']
+    else:
+        project.color = 0
+
+    project.privacy_visibility = data['privacy_visibility']
+
+    project.save()
+
+    if 'is_favourite' in data.keys():
+        favour = ProjectFavoriteUserRel.objects.using(db_id).filter(Q(project=project.id) & Q(user=user[0].id))
+        if not data['is_favourite']:
+            if favour.exists():
+                favour[0].delete()
+        else:
+            if not favour.exists():
+                newFav = ProjectFavoriteUserRel()
+                newFav.project = project
+                newFav.user = user[0]
+                newFav.save()
+
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
+
+
+def delete_project(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token)
+    if not user.exists():
+        raise PermissionDenied()
+
+    project = ProjectProject.objects.using(db_id).get(pk=request.GET.get('project_id'))
+    project.delete()
+    return HttpResponse(content='', content_type='application/json', status=200, reason=None, charset=None)
 
 
 def get_project_tasks(request):
@@ -97,7 +226,6 @@ def add_project_task(request):
 
     if 'date_deadline' in data.keys():
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
-    task.save()
 
     ProjectTagsProjectTaskRel.objects.using(db_id).filter(project_task=data['id']).delete()
 
@@ -115,6 +243,8 @@ def add_project_task(request):
 
     if 'stage_id' in data.keys():
         task.stage_id = data['stage_id']
+
+    task.save()
 
     if 'tags' in data.keys():
         for tag in data['tags']:
@@ -162,7 +292,6 @@ def edit_project_task(request):
 
     if 'date_deadline' in data.keys():
         task.date_deadline = datetime.strptime(data['date_deadline'], '%b %d, %Y %H:%M:%S')
-    task.save()
 
     ProjectTagsProjectTaskRel.objects.using(db_id).filter(project_task=data['id']).delete()
 
@@ -180,6 +309,8 @@ def edit_project_task(request):
 
     if 'stage_id' in data.keys():
         task.stage_id = data['stage_id']
+
+    task.save()
 
     if 'tags' in data.keys():
         for tag in data['tags']:
