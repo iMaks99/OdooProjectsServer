@@ -519,6 +519,25 @@ def get_res_partners_all(request):
     return JsonResponse(result, safe=False)
 
 
+def get_user(request):
+    token = request.META.get('HTTP_AUTHORIZATION', None)
+    token = token.replace('Bearer ', '')
+    db_id = request.META.get('HTTP_DBNAME', None)
+    user = ResUsers.objects.using(db_id).filter(password=token).select_related('company')
+    if not user.exists():
+        raise PermissionDenied()
+
+    u = user[0]
+
+    result = {
+        'id': u.partner.id,
+        'name': u.partner.name,
+        'display_name': u.partner.display_name,
+        'email': u.partner.email
+    }
+    return JsonResponse(result, safe=False)
+
+
 @csrf_exempt
 def login_user(request):
     if request.method != "POST":
