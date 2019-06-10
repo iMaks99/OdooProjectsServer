@@ -77,10 +77,6 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'odooprojectsdb',
-        'USER': 'odooserver',
-        'PASSWORD': 'admin',
-        'HOST': 'localhost',
-        'PORT': '8080',
     }
 }
 
