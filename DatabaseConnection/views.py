@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.db.utils import ConnectionDoesNotExist
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from pyfcm import FCMNotification
@@ -543,8 +544,15 @@ def login_user(request):
     if request.method != "POST":
         return HttpResponseNotFound("Incorrect request method")
 
-    user = ResUsers.objects.using(request.POST['db_name']).get(login=request.POST['user_mail'])
+    if not Databases.objects.using('default').filter(NAME=request.POST['db_name']).exists():
+        return HttpResponseNotFound('database does not found')
 
+    user = None
+
+    try:
+        user = ResUsers.objects.using(request.POST['db_name']).get(login=request.POST['user_mail'])
+    except ConnectionDoesNotExist:
+        get_db_cred(request.POST['db_name'])
     token = user.password
 
     try:
