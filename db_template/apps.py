@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class DbtemplateConfig(AppConfig):
-    name = 'DBTemplate'
+    name = 'db_template'

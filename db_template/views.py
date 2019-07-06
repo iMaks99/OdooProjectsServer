@@ -2,7 +2,7 @@ from django.db import connections, OperationalError
 from django.http import HttpResponseNotFound, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from DBTemplate.models import Databases
+from db_template.models import Databases
 
 
 @csrf_exempt

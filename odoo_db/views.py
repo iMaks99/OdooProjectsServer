@@ -8,8 +8,8 @@ from django.http import JsonResponse, HttpResponseNotFound, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from pyfcm import FCMNotification
 
-from DBTemplate.models import FCMUsers
-from DatabaseConnection.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
+from db_template.models import FCMUsers
+from odoo_db.models import ProjectProject, ResUsers, ProjectTask, ProjectFavoriteUserRel, \
     HrDepartment, HrEmployee, MailActivity, ProjectTags, ProjectTagsProjectTaskRel, ResPartner, MailAlias, IrModel
 
 

@@ -29,8 +29,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'DatabaseConnection.apps.DatabaseconnectionConfig',
-    'DBTemplate.apps.DbtemplateConfig',
+    'odoo_db.apps.DatabaseconnectionConfig',
+    'db_template.apps.DbtemplateConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
