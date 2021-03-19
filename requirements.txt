@@ -18,7 +18,7 @@ numpy==1.15.4
 pandas==0.23.4
 passlib==1.7.1
 patsy==0.5.1
-Pillow==6.2.0
+Pillow==8.1.1
 psycopg2==2.7.7
 psycopg2-binary==2.7.7
 pyclustering==0.9.0
