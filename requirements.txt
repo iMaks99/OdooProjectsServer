@@ -3,7 +3,7 @@ chardet==3.0.4
 confusable-homoglyphs==3.2.0
 cycler==0.10.0
 dj-database-url==0.5.0
-django==2.2.13
+django==2.2.22
 django-registration==3.0
 django-uuidfield==0.5.0
 ezodf==0.3.2
